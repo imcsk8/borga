@@ -1,0 +1,46 @@
+Summary:
+Borga means bug-Orga. Orga is one of the enemies of Godzilla [1],
+so project Borga was started to become enemy of Bugzilla :).
+
+It is supposed to be CLI tool to help me work with Bugzilla during
+packaging process.
+
+
+Config:
+You have to create config file '~/.borga' with following format:
+[bugzilla]
+SERVICE=https://bugzilla.redhat.com/xmlrpc.cgi
+USERNAME=bzuser@mail.com
+PASSWORD=bzpass
+
+You if you don't want to have config file in your home directory put
+path to the config file to BORGA_CONF env
+
+
+Dependency:
+Requires docopt
+Requires (brew or brewkoji) and koji
+Requires python-bugzilla >= 0.8.0
+
+
+Examples:
+borga check --owner='user@redhat.com' --flags=devel_ack,qa_ack Fedora bash
+    - will print list of bugs in POST for component bash in product Fedora
+      owned by user@redhat.com which don't have given flags in status +
+
+borga format --owner='user@redhat.com' Fedora bash
+    - will print list of bugs in POST for component bash in product Fedora
+      owned by user@redhat.com
+
+borga finalize --owner='user@redhat.com' --fixed-in='bach-1.2-3.f18' Fedora bash
+    - will change status to MODIFIED and fill 'Fixed in' for all bugs
+      in POST for component bash in product Fedora owned by user@redhat.com
+
+
+Future plans:
+Gonna implement everything needed to build package with fedpkg
+(or internal synonym) by one or two borga commands
+
+
+Links:
+[1] http://thearchnemesis.com/godzillamonsters.html

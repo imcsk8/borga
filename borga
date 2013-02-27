@@ -1,0 +1,95 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+#  borga
+#
+#  Copyright 2013 Martin Mágr <mmagr@redhat.com>
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+#  MA 02110-1301, USA.
+#
+#
+
+"""Usage:
+    borga format [--owner=OWNER] <product> <component>
+    borga check [--owner=OWNER] --flags=FLAG,FLAG <product> <component>
+    borga finalize [--owner=OWNER] [--fixed-in=FIXED_IN] [--comment=COMMENT] <product> <component>
+"""
+
+import os
+import sys
+from docopt import docopt
+from ConfigParser import ConfigParser
+from borgalib.connectors import BZConnector
+
+
+CONF_PATH = os.environ.get('BORGA_CONF', '~/.borga')
+
+
+class Borga(object):
+    def __init__(self, url, user=None, password=None):
+        self._bzc = BZConnector(url, user=user, password=password)
+
+    def format(self, args):
+        kwargs = {'product': args['<product>'],
+                  'component': args['<component>'],
+                  'assigned_to': args['--owner'],
+                  'status': 'POST'}
+        bug_out = ', '.join(['rhbz#%s' % i.bug_id
+                             for i in self._bzc.get_bugs(**kwargs)])
+        sys.stdout.write('Resolves: %s\n' % bug_out)
+
+    def check(self, args):
+        flags = map(lambda x: x.strip(), args['--flags'].split(','))
+        failed = self._bzc.check_bugs(args['<product>'],
+                                      args['<component>'],
+                                      flags, owner=args['--owner'])
+        for flag, bugs in failed.iteritems():
+            bugs = ['rhbz#%s' % i for i in bugs]
+            sys.stdout.write('Flag %s failed: %s\n' % (flag, bugs))
+
+    def finalize(self, args):
+        kwargs = {'owner': args['--owner'],
+                  'fixed_in': args['--fixed-in'],
+                  'comment': args['--comment']}
+        bug_list = self._bzc.finalize_bugs(args['<product>'],
+                                           args['<component>'],
+                                           **kwargs)
+        bug_out = ', '.join(['rhbz#%s' % i for i in bug_list])
+        sys.stdout.write('Modified: %s\n' % bug_out)
+
+
+def main(args):
+    # load config
+    conf = ConfigParser()
+    loaded = conf.read(os.path.expanduser(CONF_PATH))
+    if not loaded:
+        sys.stderr.write('Cannot read config file. Please check %s and '
+                         'try again.\n' % CONF_PATH)
+        sys.exit(1)
+    bz_url = conf.get('bugzilla', 'SERVICE')
+    bz_user = conf.get('bugzilla', 'USERNAME')
+    bz_pass = conf.get('bugzilla', 'PASSWORD')
+
+    # run command
+    borga = Borga(bz_url, user=bz_user, password=bz_pass)
+    addr = '%d%d%d' % (args['format'], args['check'], args['finalize'])
+    cmd_map = {'100': borga.format, '010': borga.check, '001': borga.finalize}
+    cmd_map[addr](args)
+    sys.exit(0)
+
+
+if __name__ == '__main__':
+    main(docopt(__doc__, version='0.1'))
