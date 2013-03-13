@@ -57,7 +57,7 @@ class Borga(object):
                                       args['<component>'],
                                       flags, owner=args['--owner'])
         for flag, bugs in failed.iteritems():
-            bugs = ['rhbz#%s' % i for i in bugs]
+            bugs = ' '.join(['rhbz#%s' % i for i in bugs])
             sys.stdout.write('Flag %s failed: %s\n' % (flag, bugs))
 
     def finalize(self, args):
