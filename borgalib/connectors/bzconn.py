@@ -55,8 +55,12 @@ class BZConnector(object):
         """
         Returns result of BZ query according to given kwargs.
         """
+        clean = {}
+        for key, value in kwargs.iteritems():
+            if value is not None:
+                clean[key] = value
         try:
-            return self._bugzilla.query(kwargs)
+            return self._bugzilla.query(clean)
         except xmlrpclib.Fault, ex:
             raise self.Error('Bugzilla query failed:\n%s' % ex)
 
@@ -69,7 +73,7 @@ class BZConnector(object):
         failed = {}
         flags = flags or []
         kwargs = {'product': product, 'component': component,
-                  'assigned_to': owner, 'status': status}
+                  'status': status, 'assigned_to': owner}
         for bug in self.get_bugs(**kwargs):
             flg_map = dict([(i['name'], i) for i in bug.flags])
             for flg in flags:
