@@ -18,21 +18,21 @@ path to the config file to BORGA_CONF env
 
 
 Dependency:
-Requires docopt
+Requires kobo.client
 Requires (brew or brewkoji) and koji
 Requires python-bugzilla >= 0.8.0
 
 
 Examples:
-borga check --owner='user@redhat.com' --flags=devel_ack,qa_ack Fedora bash
+borga check-flags --owner='user@redhat.com' --flags=devel_ack,qa_ack Fedora bash
     - will print list of bugs in POST for component bash in product Fedora
       owned by user@redhat.com which don't have given flags in status +
 
-borga format --owner='user@redhat.com' Fedora bash
+borga format-msg --owner='user@redhat.com' Fedora bash
     - will print list of bugs in POST for component bash in product Fedora
       owned by user@redhat.com
 
-borga finalize --owner='user@redhat.com' --fixed-in='bach-1.2-3.f18' Fedora bash
+borga set-modified --owner='user@redhat.com' --fixed-in='bach-1.2-3.f18' Fedora bash
     - will change status to MODIFIED and fill 'Fixed in' for all bugs
       in POST for component bash in product Fedora owned by user@redhat.com
 

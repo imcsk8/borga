@@ -13,6 +13,7 @@ class BZConnector(object):
 
     def __init__(self, url, user=None, password=None, cookiefile=None):
         try:
+            self._user = user
             self._bugzilla = bugzilla.RHBugzilla(url=url, user=user,
                                                  password=password,
                                                  cookiefile=cookiefile)
@@ -28,14 +29,37 @@ class BZConnector(object):
         except xmlrpclib.Fault:
             raise self.Error('Bug #%s does not exist.' % bug_id)
 
-    def _update_bug(self, bug, **kwargs):
+    def update_bug(self, bug, **kwargs):
         """
         Most helpful:
             assigned_to, comment, keywords_add, keywords_remove,
             priority, severity, target_milestone, status, fixed_in
         More at:
             http://git.fedorahosted.org/cgit/python-bugzilla.git/tree/bugzilla/bugzilla4.py#n57
+        Flags:
+            just use flags=['flag+', 'yaf?']
         """
+        flags = []
+        for flg in kwargs.pop('flags', []):
+            hasstate = False
+            for state in ('+', '?', '-'):
+                parts = flg.split(state)
+                if len(parts) < 2:
+                    continue
+                hasstate = True
+                #flag = {'name': parts[0], 'status': state}
+                #if state == '?':
+                #    flag['requestee'] = self._user
+                flags.append({'name': parts[0], 'status': state})
+            if not hasstate:
+                flags.append({'name': flg, 'status': ''})
+        if flags:
+            try:
+                self._bugzilla.update_flags([bug.bug_id], flags)
+            except xmlrpclib.Fault, ex:
+                raise self.Error('Failed to update given bug #%s:\n%s'
+                                 % (bug_id, ex))
+
         try:
             update = self._bugzilla.build_update(**kwargs)
             return self._bugzilla.update_bugs(bug.bug_id, update)
@@ -49,7 +73,7 @@ class BZConnector(object):
         of failure.
         """
         bug = self._get_bug(bug_id)
-        self._update_bug(bug, comment=comment)
+        self.update_bug(bug, comment=comment)
 
     def get_bugs(self, **kwargs):
         """
@@ -64,36 +88,31 @@ class BZConnector(object):
         except xmlrpclib.Fault, ex:
             raise self.Error('Bugzilla query failed:\n%s' % ex)
 
+    def filter_by_flags(self, buglist, flags, state, negative=False):
+        output = {}
+        for bug in buglist:
+            flg_map = dict([(i['name'], i) for i in bug.flags])
+            for flg in flags:
+                if flg not in flg_map:
+                    if negative:
+                        output.setdefault(flg, []).append(bug.bug_id)
+                    continue
+
+                flg_status = flg_map[flg].get('status', '-')
+                if (negative and flg_status != state) or \
+                   (not negative and flg_status == state):
+                    output.setdefault(flg, []).append(bug.bug_id)
+        return output
+
     def check_bugs(self, product, component, flags, owner=None,
                    status='POST'):
         """
         Checks if all bugs of given product/component in status POST
         owned by owner have necessary flags.
         """
-        failed = {}
+
         flags = flags or []
         kwargs = {'product': product, 'component': component,
                   'status': status, 'assigned_to': owner}
-        for bug in self.get_bugs(**kwargs):
-            flg_map = dict([(i['name'], i) for i in bug.flags])
-            for flg in flags:
-                if flg not in flg_map or \
-                   flg_map[flg].get('status', '-') != '+':
-                    failed.setdefault(flg, []).append(bug.bug_id)
-        return failed
-
-    def finalize_bugs(self, product, component, owner=None,
-                      fixed_in=None, comment=None, pre_status='POST',
-                      post_status='MODIFIED'):
-        """
-        Sets all bugs of given product/component in status POST owned
-        by owner to MODIFIED. Returns list of modified bugs.
-        """
-        modified = []
-        kwargs = {'product': product, 'component': component,
-                  'assigned_to': owner, 'status': pre_status}
-        for bug in self.get_bugs(**kwargs):
-            self._update_bug(bug, fixed_in=fixed_in, status=post_status,
-                             comment=comment)
-            modified.append(bug.bug_id)
-        return modified
+        bugs = self.get_bugs(**kwargs)
+        return self.filter_by_flags(bugs, flags, '+', negative=True)
