@@ -8,17 +8,20 @@ packaging process.
 
 Config:
 You have to create config file '~/.borga' with following format:
-[bugzilla]
-SERVICE=https://bugzilla.redhat.com/xmlrpc.cgi
-USERNAME=bzuser@mail.com
-PASSWORD=bzpass
+SERVICE = "https://bugzilla.redhat.com/xmlrpc.cgi"
+USERNAME = "bzuser@mail.com"
+PASSWORD = "bzpass"
+MONGODB_URL = "localhost"
+MONGODB_PORT = 27017
+SECRET = "linopt_token_secret"
 
-You if you don't want to have config file in your home directory put
+
+If you don't want to have config file in your home directory put
 path to the config file to BORGA_CONF env
 
 
 Dependency:
-Requires kobo.client
+Requires kobo.client (fedorahosted.org/kobo)
 Requires (brew or brewkoji) and koji
 Requires python-bugzilla >= 0.8.0
 
@@ -35,6 +38,9 @@ borga format-msg --owner='user@redhat.com' Fedora bash
 borga set-modified --owner='user@redhat.com' --fixed-in='bach-1.2-3.f18' Fedora bash
     - will change status to MODIFIED and fill 'Fixed in' for all bugs
       in POST for component bash in product Fedora owned by user@redhat.com
+
+borge get-token
+    - will print LinOTP counter-based token number
 
 
 Future plans:
