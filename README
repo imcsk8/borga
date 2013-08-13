@@ -14,6 +14,7 @@ PASSWORD = "bzpass"
 MONGODB_URL = "localhost"
 MONGODB_PORT = 27017
 SECRET = "linopt_token_secret"
+VM_PASSWORD = "password for VMs"
 
 
 If you don't want to have config file in your home directory put

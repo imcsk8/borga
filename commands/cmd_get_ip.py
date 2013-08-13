@@ -46,19 +46,18 @@ class Get_Ip(ClientCommand):
         self.parser.usage = '%%prog %s <name>' % self.normalized_name
 
     def run(self, *args, **kwargs):
-        try:
-           name = args[0]
-        except ValueError:
-            self.parser.error('Please specify pname of VM.')
-
-        macs = get_mac(name)
-        if not macs:
-            self.parser.error('Unable to find out MAC address of VM')
-        ips = [get_ip_from_leases(i) for i in macs
-                                     if get_ip_from_leases(i)]
-        if not ips:
-            self.parser.error('Unable to find out IP address from '
-                              '/var/lib/libvirt/dnsmasq/default.leases')
-        for i in ips:
-            sys.stdout.write('%s\n' % i)
-        sys.stdout.flush()
+        for name in args:
+            macs = get_mac(name)
+            if not macs:
+               print 'Unable to find out MAC address of %s' % name
+               continue
+            ips = [get_ip_from_leases(i) for i in macs
+                                         if get_ip_from_leases(i)]
+            if not ips:
+                print ('Unable to find out IP address of %s from '
+                       '/var/lib/libvirt/dnsmasq/default.leases'
+                       % name)
+                continue
+            for i in ips:
+                sys.stdout.write('%s: %s\n' % (name,i))
+            sys.stdout.flush()
