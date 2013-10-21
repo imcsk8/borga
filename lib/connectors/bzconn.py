@@ -84,15 +84,12 @@ class BZConnector(object):
 
     def filter_by_flags(self, bugs, flags, negative=False):
         output = []
-        fno = len(flags)
         for bug in bugs:
-            bno = 0
-            for flag in bug.flags:
-                if ((not negative and '%(name)s%(status)s' % flag in flags)
-                    or negative):
-                    bno += 1
-            # add bug to result only if it has all required flags
-            if fno == bno:
+            bug_flags = set(['%(name)s%(status)s' % flg for flg in bug.flags])
+            missing = set(flags) - bug_flags
+            if ((not negative and not missing) or
+                (negative and set(flags) == missing)):
+                # we are looking for bugs (not) having all required flags
                 output.append(bug)
         return output
 

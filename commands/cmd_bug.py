@@ -12,8 +12,8 @@ def status_set(connector, bugs, status, fixed_in=None, message=None):
     for bug in bugs:
         connector.update_bug(bug, fixed_in=fixed_in, status=status,
                              comment=message)
-        sys.stdout.write('Changed bug #%s (%s).\n' % (bug.bug_id,
-                                                     bug.summary[:20]))
+        sys.stdout.write('Changed bug #%s (%s...).\n' % (bug.bug_id,
+                                                         bug.summary[:50]))
         sys.stdout.flush()
 
 
@@ -22,7 +22,7 @@ def flag_set(connector, bugs, flag):
     for bug in bugs:
         connector.update_bug(bug, flags=[flag])
         sys.stdout.write('Changed bug #%s (%s).\n' % (bug.bug_id,
-                                                   bug.summary[:20]))
+                                                      bug.summary[:50]))
         sys.stdout.flush()
 
 
@@ -33,11 +33,11 @@ def flag_check(connector, bugs, flags):
         if query:
             sys.stdout.write('Bugs missing flag %s:\n' % flag)
             for bug in query:
-                sys.stdout.write('#%s (%s)\n' % (bug.bug_id, bug.summary[:20]))
+                sys.stdout.write('#%s (%s)\n' % (bug.bug_id, bug.summary[:50]))
             sys.stdout.flush()
 
 
-def format(connector, bugs, msg_type):
+def msg_format(connector, bugs, msg_type):
     """Prints bugs in format"""
     if msg_type == 'git':
         fmt = 'rhbz#%s'
@@ -46,7 +46,7 @@ def format(connector, bugs, msg_type):
     elif msg_type == 'spec':
         fmt = '- (#%s)'
         separator = '\n'
-    sys.stdout.write(separator.join([fmt % i.bug_id for i in bugs]))
+    sys.stdout.write('%s\n' % separator.join([fmt % i.bug_id for i in bugs]))
     sys.stdout.flush()
 
 
@@ -55,7 +55,10 @@ class Bug(ClientCommand):
     enabled = True
 
     def options(self):
-        self.parser.usage = ('%%prog %s <command> <arg> [options]'
+        self.parser.usage = ('%%prog %s <command> <arg> [options]\n'
+                             'Commands(arg): list, status-set(status), '
+                             'flag-set(flag), flag-check(list of flags), '
+                             'format(git|spec)'
                              % self.normalized_name)
         # filtering options
         self.parser.add_option('-p',  '--product',
@@ -180,3 +183,7 @@ class Bug(ClientCommand):
                 self.parser.error('Please specify flags in argument.')
             flg = set([i.strip() for i in cmd_arg.split(',') if i.strip()])
             flag_check(connector, query, flg)
+        if command == 'format':
+            if not cmd_arg:
+                self.parser.error('Please specify format type in argument.')
+            msg_format(connector, query, cmd_arg)
