@@ -7,15 +7,11 @@ from optparse import IndentedHelpFormatter
 from kobo.cli import CommandOptionParser
 from kobo.client import ClientCommandContainer
 from kobo.client import commands
-from kobo.conf import PyConfigParser
 
 from borga import commands
 
 
 __all__ = ('main',)
-
-
-CONF_PATH = os.environ.get('BORGA_CONF', '~/.borga')
 
 
 # register command plugins
@@ -24,9 +20,7 @@ class BorgaCommandContainer(ClientCommandContainer):
 BorgaCommandContainer.register_module(commands, prefix='cmd_')
 
 
-def main():
-    conf = PyConfigParser()
-    conf.load_from_file(os.path.expanduser(CONF_PATH))
+def main(conf):
     container = BorgaCommandContainer(conf=conf)
     formatter = IndentedHelpFormatter(max_help_position=60, width=120)
     parser = CommandOptionParser(command_container=container,

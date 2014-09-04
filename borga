@@ -21,15 +21,22 @@
 #  MA 02110-1301, USA.
 #
 
+import os
 import sys
 import logging
 import traceback
+from kobo.conf import PyConfigParser
+
+CONF_PATH = os.environ.get('BORGA_CONF', '~/.borga')
+
+conf = PyConfigParser()
+conf.load_from_file(os.path.expanduser(CONF_PATH))
 
 
 def set_logger():
     formatter = logging.Formatter('[%(asctime)s][%(levelname)s]: '
                                   '%(message)s')
-    handler = logging.FileHandler('/var/log/borga.log')
+    handler = logging.FileHandler(conf.get('LOGFILE'))
     handler.setLevel(logging.INFO)
     handler.setFormatter(formatter)
     logger = logging.getLogger('borga')
@@ -40,7 +47,7 @@ def set_logger():
 try:
     from borga.main import main
     set_logger()
-    main()
+    main(conf)
 except ImportError, ex:
     sys.stderr.write('%s.\n' % ex)
     sys.exit(1)
