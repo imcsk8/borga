@@ -69,6 +69,9 @@ def format_submodules(installdir, print_output=True):
             if mod['path'] == cont[1].strip():
                 mod['index'] = index
                 mod['commit'] = cont[0].strip()
+                import re
+                if re.search("^\-|^\+", mod['commit']):
+                    mod['commit'] = mod['commit'][1:]
                 url = mod['github_url'].replace('%%{%(name)s_commit}' % mod,
                                                 mod['commit'])
                 mod['download_url'] = url.replace('git://', 'https://')
