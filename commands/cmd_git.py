@@ -15,7 +15,6 @@ def format_submodules(installdir, print_output=True):
     # get urls
     cmd = ('cat .gitmodules | grep "url"')
     rc, out = run(cmd, can_fail=True)
-
     modules = []
     for line in out.split('\n'):
         cont = line.strip().split('=')
@@ -61,7 +60,8 @@ def format_submodules(installdir, print_output=True):
     index = 0
     for line in out.split('\n'):
         cont = line.strip().split(' ')
-        if len(cont) < 3:
+        # some modules just have one field
+        if len(cont) < 2:
             if line:
                 sys.stdout.write('Invalid line: %s\n' % line)
             continue
@@ -150,8 +150,12 @@ class Git(ClientCommand):
 
         # run subcommand
         if command == 'submodules-format':
-            format_submodules(installdir)
+            return format_submodules(installdir)
+            #return format_submodules(installdir, True)
 
         if command == 'submodules-download':
             modules = format_submodules(installdir, print_output=False)
-            download_submodules(modules, destination)
+            return download_submodules(modules, destination)
+
+        #Fail if we issue an invalid command
+        sys.stdout.write("Invalid command: %s" % command)
